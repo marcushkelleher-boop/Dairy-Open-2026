@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Dairy Open</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --milk:       #f8f4ee;
+    --milk-pure:  #ffffff;
+    --cream:      #ede6d6;
+    --cream-deep: #d9cdb8;
+    --butter:     #e8c94a;
+    --butter-deep:#c8a030;
+    --black:      #1a1510;
+    --near-black: #2a2218;
+    --brown:      #4a3828;
+    --brown-mid:  #6b5540;
+    --brown-lite: #9a7f68;
+    --red-barn:   #8b2020;
+    --teal:       #2a6b6b;
+    --teal-lite:  #4a9999;
+    --orange:     #c8601a;
+    --orange-lite:#e88040;
+    --muted:      #7a6e60;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--milk); color: var(--black); min-height: 100vh; padding-bottom: 50px; }
+  .sync-banner { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 12px; font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; transition: all 0.3s; }
+  .sync-banner.connected    { background: #1a3a1a; color: #6bbf6b; }
+  .sync-banner.connecting   { background: #3a2e10; color: var(--butter); }
+  .sync-banner.disconnected { background: #3a1010; color: #e88080; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
+  .sync-banner.connected .sync-dot { animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .site-header { background: var(--black); border-bottom: 4px solid var(--butter); padding: 20px 20px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 24px rgba(0,0,0,0.35); }
+  .header-eyebrow { font-size: 0.6rem; letter-spacing: 4px; text-transform: uppercase; color: var(--brown-lite); margin-bottom: 6px; }
+  .site-header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 6vw, 3.4rem); font-weight: 900; letter-spacing: 2px; color: var(--milk); line-height: 1; }
+  .site-header h1 .accent { color: var(--butter); }
+  .milk-drop { display: inline-block; width: 7px; height: 7px; background: var(--butter); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); margin: 0 7px; vertical-align: middle; opacity: 0.65; }
+  .site-header .subtitle { font-size: 0.63rem; letter-spacing: 3px; text-transform: uppercase; color: var(--brown-lite); margin-top: 7px; }
+  .nav-tabs { display: flex; background: var(--near-black); border-bottom: 2px solid var(--brown); }
+  .nav-tab { flex: 1; padding: 12px 6px; text-align: center; font-size: 0.68rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--brown-lite); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .nav-tab.active { color: var(--butter); border-bottom-color: var(--butter); background: rgba(232,201,74,0.08); }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 12px; }
+  .setup-panel { padding: 24px 0; }
+  .panel-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--near-black); margin-bottom: 4px; }
+  .panel-desc { font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; }
+  .matches-grid { display: flex; flex-direction: column; gap: 10px; }
+  .match-setup-card { background: var(--milk-pure); border: 1px solid var(--cream-deep); border-radius: 10px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .match-setup-card .match-label { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--butter-deep); margin-bottom: 10px; font-weight: 700; }
+  .players-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+  .team-inputs { display: flex; flex-direction: column; gap: 6px; }
+  .team-inputs label { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px; }
+  .team-a-block label { color: var(--teal); }
+  .team-b-block label { color: var(--orange); }
+  .player-input { background: var(--milk); border: 1px solid var(--cream-deep); border-radius: 6px; padding: 7px 10px; color: var(--black); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; width: 100%; transition: border-color 0.2s; }
+  .player-input:focus { outline: none; border-color: var(--butter-deep); background: var(--milk-pure); }
+  .vs-badge { font-family: 'Playfair Display', serif; font-size: 1rem; font-style: italic; color: var(--muted); text-align: center; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 11px 22px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border: none; transition: all 0.18s; text-transform: uppercase; }
+  .btn-primary { background: var(--black); color: var(--butter); }
+  .btn-primary:hover { background: var(--near-black); transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--cream-deep); }
+  .btn-secondary:hover { border-color: var(--brown-lite); color: var(--brown); }
+  .setup-footer { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .scoreboard-view { padding: 16px 0; }
+  .master-board { background: var(--black); border: 2px solid var(--butter); border-radius: 16px; padding: 20px 16px 16px; margin-bottom: 20px; box-shadow: 0 6px 32px rgba(0,0,0,0.18); }
+  .master-board-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-style: italic; color: var(--butter); text-align: center; margin-bottom: 16px; opacity: 0.85; }
+  .team-totals { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .team-total-block { text-align: center; }
+  .team-name-display { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .team-a-name { color: var(--teal-lite); }
+  .team-b-name { color: var(--orange-lite); }
+  .team-points-big { font-family: 'Playfair Display', serif; font-size: 4rem; line-height: 1; font-weight: 900; }
+  .team-a-pts { color: var(--teal-lite); }
+  .team-b-pts { color: var(--orange-lite); }
+  .pts-label { font-size: 0.58rem; letter-spacing: 2px; color: var(--brown-lite); text-transform: uppercase; margin-top: 2px; }
+  .score-divider { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--brown-lite); font-style: italic; }
+  .match-summary-grid { display: flex; flex-direction: column; gap: 5px; }
+  .match-summary-header { display: grid; grid-template-columns: 1fr 74px 74px 74px 1fr; gap: 4px; padding: 0 10px 7px; font-size: 0.53rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--brown-lite); border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px; }
+  .match-summary-header span:nth-child(2), .match-summary-header span:nth-child(3), .match-summary-header span:nth-child(4) { text-align: center; }
+  .match-summary-header span:last-child { text-align: right; }
+  .match-summary-row { display: grid; grid-template-columns: 1fr 74px 74px 74px 1fr; gap: 4px; align-items: center; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 9px 10px; font-size: 0.76rem; border-left: 3px solid transparent; transition: background 0.2s; }
+  .team-a-cell { color: var(--teal-lite); text-align: left; font-weight: 500; }
+  .team-b-cell { color: var(--orange-lite); text-align: right; font-weight: 500; }
+  .pts-cell { text-align: center; font-family: 'DM Mono', monospace; font-size: 0.7rem; }
+  .pts-cell-label { font-size: 0.5rem; color: var(--brown-lite); letter-spacing: 1px; text-transform: uppercase; display: block; }
+  .a-win-val   { color: var(--teal-lite); font-weight: 700; }
+  .b-win-val   { color: var(--orange-lite); font-weight: 700; }
+  .tie-val     { color: var(--butter); }
+  .lead-a-live { color: var(--teal-lite); font-style: italic; font-size: 0.65rem; }
+  .lead-b-live { color: var(--orange-lite); font-style: italic; font-size: 0.65rem; }
+  .as-live     { color: var(--brown-lite); font-size: 0.6rem; }
+  .win-a { border-left-color: var(--teal-lite) !important; background: rgba(42,107,107,0.18) !important; }
+  .win-b { border-left-color: var(--orange-lite) !important; background: rgba(200,96,26,0.14) !important; }
+  .win-tie { border-left-color: var(--brown-lite); }
+  .matches-list { display: flex; flex-direction: column; gap: 16px; }
+  .match-score-card { background: var(--milk-pure); border: 1px solid var(--cream-deep); border-radius: 12px; overflow: hidden; box-shadow: 0 3px 16px rgba(0,0,0,0.08); }
+  .match-card-header { display: grid; grid-template-columns: 1fr auto 1fr; background: var(--black); border-bottom: 2px solid var(--butter); }
+  .match-card-team { padding: 10px 14px; font-size: 0.78rem; font-weight: 600; }
+  .match-card-team.team-a { color: var(--teal-lite); border-right: 1px solid rgba(255,255,255,0.08); }
+  .match-card-team.team-b { color: var(--orange-lite); text-align: right; border-left: 1px solid rgba(255,255,255,0.08); }
+  .match-card-team .player-names { font-size: 0.67rem; font-weight: 400; opacity: 0.8; margin-top: 2px; }
+  .match-number-badge { padding: 10px 12px; font-family: 'Playfair Display', serif; font-size: 0.85rem; font-style: italic; color: var(--butter); text-align: center; white-space: nowrap; }
+  .match-lead-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--cream); border-bottom: 1px solid var(--cream-deep); flex-wrap: wrap; gap: 6px; }
+  .lead-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+  .lead-pill-a { background: rgba(42,107,107,0.15); color: var(--teal); border: 1px solid rgba(42,107,107,0.3); }
+  .lead-pill-b { background: rgba(200,96,26,0.12); color: var(--orange); border: 1px solid rgba(200,96,26,0.3); }
+  .lead-pill-tie { background: rgba(0,0,0,0.06); color: var(--muted); border: 1px solid var(--cream-deep); }
+  .lead-pts-grid { display: flex; gap: 10px; }
+  .lead-pt { text-align: center; font-family: 'DM Mono', monospace; font-size: 0.63rem; }
+  .lead-pt-label { color: var(--muted); font-size: 0.53rem; text-transform: uppercase; letter-spacing: 1px; }
+  .lead-pt-val { font-size: 0.85rem; font-weight: 600; margin-top: 1px; color: var(--near-black); }
+  .scorecard-wrap { overflow-x: auto; }
+  .scorecard-table { width: 100%; min-width: 560px; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+  .scorecard-table th { background: var(--cream); padding: 5px 4px; text-align: center; font-size: 0.57rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .scorecard-table th.hole-th { color: var(--brown); }
+  .scorecard-table th.total-th { color: var(--brown-mid); background: var(--cream-deep); }
+  .scorecard-table td { padding: 4px 3px; text-align: center; border: 1px solid rgba(0,0,0,0.04); }
+  .par-row td { color: var(--muted); background: rgba(0,0,0,0.03); font-size: 0.65rem; }
+  .par-row td.total-col { background: rgba(0,0,0,0.07); }
+  .par-row td:first-child { color: var(--butter-deep); font-size: 0.58rem; text-align:left; padding-left:6px; letter-spacing:1px; }
+  .score-input { width: 32px; height: 28px; background: var(--milk); border: 1px solid var(--cream-deep); border-radius: 4px; color: var(--black); text-align: center; font-family: 'DM Mono', monospace; font-size: 0.8rem; padding: 0; transition: border-color 0.15s; }
+  .score-input:focus { outline: none; border-color: var(--butter-deep); background: var(--milk-pure); }
+  .score-input.team-a-input { border-color: rgba(42,107,107,0.3); }
+  .score-input.team-a-input:focus { border-color: var(--teal); }
+  .score-input.team-b-input { border-color: rgba(200,96,26,0.25); }
+  .score-input.team-b-input:focus { border-color: var(--orange); }
+  .team-a-row td:first-child { color: var(--teal); font-size: 0.63rem; white-space: nowrap; text-align: left; padding-left: 8px; }
+  .team-b-row td:first-child { color: var(--orange); font-size: 0.63rem; white-space: nowrap; text-align: left; padding-left: 8px; }
+  .total-col { background: rgba(0,0,0,0.04); font-weight: 700; font-size: 0.8rem; }
+  .hw-row td { padding: 2px 3px; }
+  .hw-dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto; display: block; }
+  .hw-a { background: var(--teal); }
+  .hw-b { background: var(--orange); }
+  .hw-tie { background: var(--brown-lite); opacity: 0.5; }
+  .score-eagle  { color: var(--butter-deep) !important; font-weight: 700; }
+  .score-birdie { color: var(--teal) !important; }
+  .score-par    { color: var(--black); }
+  .score-bogey  { color: var(--orange) !important; }
+  .score-double { color: var(--red-barn) !important; }
+  .section-break th { background: var(--black) !important; color: var(--butter) !important; font-family: 'Playfair Display', serif !important; font-style: italic; letter-spacing: 2px; }
+  .match-selector { display: flex; gap: 6px; padding: 12px 12px 0; flex-wrap: wrap; }
+  .match-btn { flex: 1; min-width: 60px; padding: 8px 4px; background: var(--milk-pure); border: 1px solid var(--cream-deep); border-radius: 6px; color: var(--muted); font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; text-align: center; font-weight: 600; transition: all 0.15s; }
+  .match-btn.active { border-color: var(--butter-deep); color: var(--butter-deep); background: rgba(200,160,48,0.06); }
+  .match-btn:hover  { border-color: var(--brown-lite); color: var(--brown); }
+  .section-divider { height: 1px; background: linear-gradient(to right, transparent, var(--cream-deep), transparent); margin: 8px 0; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--black); border: 1px solid var(--butter); border-radius: 8px; padding: 10px 20px; font-size: 0.78rem; color: var(--butter); z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 480px) {
+    .match-summary-row { grid-template-columns: 1fr 62px 62px 62px 1fr; font-size: 0.68rem; }
+    .match-summary-header { grid-template-columns: 1fr 62px 62px 62px 1fr; }
+    .team-points-big { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-banner connecting" id="syncBanner">
+  <div class="sync-dot"></div>
+  <span id="syncText">Connecting…</span>
+</div>
+
+<header class="site-header">
+  <div class="header-eyebrow">Waverly Oaks · Plymouth, MA</div>
+  <h1><span class="milk-drop"></span>The Dairy <span class="accent">Open</span><span class="milk-drop"></span></h1>
+  <div class="subtitle">Match Play · Scramble Format · 20 Men · 5 Matches</div>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="showTab('scoreboard')" id="tab-scoreboard">🏆 Scoreboard</div>
+  <div class="nav-tab" onclick="showTab('scoring')" id="tab-scoring">⛳ Score Entry</div>
+  <div class="nav-tab" onclick="showTab('setup')" id="tab-setup">⚙️ Setup</div>
+</div>
+
+<div id="view-setup" style="display:none">
+  <div class="container">
+    <div class="setup-panel">
+      <div class="panel-title">Tournament Setup</div>
+      <div class="panel-desc">Enter player names for each match. Team Finn (Teal) vs Team Goldstein (Orange) — 5 matches, 3 points each.</div>
+      <div class="matches-grid" id="matchSetupGrid"></div>
+      <div class="setup-footer">
+        <button class="btn btn-primary" onclick="saveSetup()">💾 Save Setup</button>
+        <button class="btn btn-secondary" onclick="resetAll()">↺ Reset All Scores</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-scoreboard" style="display:block">
+  <div class="container">
+    <div class="scoreboard-view">
+      <div class="master-board">
+        <div class="master-board-title">Tournament Standings</div>
+        <div class="team-totals">
+          <div class="team-total-block">
+            <div class="team-name-display team-a-name" id="teamANameDisplay">Team Finn</div>
+            <div class="team-points-big team-a-pts" id="totalPtsA">0</div>
+            <div class="pts-label">Points</div>
+          </div>
+          <div class="score-divider">vs</div>
+          <div class="team-total-block">
+            <div class="team-name-display team-b-name" id="teamBNameDisplay">Team Goldstein</div>
+            <div class="team-points-big team-b-pts" id="totalPtsB">0</div>
+            <div class="pts-label">Points</div>
+          </div>
+        </div>
+        <div class="match-summary-header">
+          <span>Team Finn</span><span>Front 9</span><span>Back 9</span><span>Overall</span><span style="text-align:right">Team Goldstein</span>
+        </div>
+        <div class="match-summary-grid" id="matchSummaryGrid"></div>
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-size:0.78rem;font-style:italic;color:var(--muted);text-align:center;padding:0 0 10px;">
+        Live match play — updates in real time · AS = All Square · XUP = holes up · 15 pts total available
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-scoring" style="display:none">
+  <div class="container">
+    <div style="padding-top:12px">
+      <div class="match-selector" id="matchSelector"></div>
+      <div class="section-divider"></div>
+      <div class="matches-list" id="scoreCardArea"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyBNXMmQCvHgJo69Wz2fMipHUT27sBvCxB0",
+  authDomain:        "dairy-open.firebaseapp.com",
+  databaseURL:       "https://dairy-open-default-rtdb.firebaseio.com",
+  projectId:         "dairy-open",
+  storageBucket:     "dairy-open.firebasestorage.app",
+  messagingSenderId: "288620736882",
+  appId:             "1:288620736882:web:e631a576f935efc1cc2deb"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const tournamentRef = db.ref('tournament');
+
+const connectedRef = db.ref('.info/connected');
+connectedRef.on('value', snap => {
+  const banner = document.getElementById('syncBanner');
+  const text   = document.getElementById('syncText');
+  if (snap.val()) {
+    banner.className = 'sync-banner connected';
+    text.textContent = 'Live · All scores syncing';
+  } else {
+    banner.className = 'sync-banner disconnected';
+    text.textContent = 'Offline · Will sync when reconnected';
+  }
+});
+
+const HOLES = [
+  {n:1,par:4},{n:2,par:4},{n:3,par:3},{n:4,par:5},{n:5,par:5},
+  {n:6,par:4},{n:7,par:4},{n:8,par:3},{n:9,par:4},
+  {n:10,par:4},{n:11,par:4},{n:12,par:4},{n:13,par:5},
+  {n:14,par:3},{n:15,par:4},{n:16,par:5},{n:17,par:3},{n:18,par:4}
+];
+const MATCH_COUNT = 5;
+
+let state = {
+  teamAName: 'Team Finn',
+  teamBName: 'Team Goldstein',
+  matches: Array.from({length: MATCH_COUNT}, (_, i) => ({
+    id: i, aPlayers: ['', ''], bPlayers: ['', ''],
+    scoresA: Array(18).fill(''), scoresB: Array(18).fill('')
+  }))
+};
+let activeMatchIdx = 0;
+
+tournamentRef.on('value', snap => {
+  const data = snap.val();
+  if (!data) return;
+  if (data.teamAName) state.teamAName = data.teamAName;
+  if (data.teamBName) state.teamBName = data.teamBName;
+  if (data.matches) {
+    data.matches.forEach((m, i) => {
+      if (!m || i >= MATCH_COUNT) return;
+      state.matches[i].aPlayers = m.aPlayers || ['',''];
+      state.matches[i].bPlayers = m.bPlayers || ['',''];
+      state.matches[i].scoresA  = m.scoresA  || Array(18).fill('');
+      state.matches[i].scoresB  = m.scoresB  || Array(18).fill('');
+    });
+  }
+  buildSetupUI();
+  renderScoreboard();
+  renderScoringTab();
+});
+
+function pushToFirebase() {
+  tournamentRef.set(state).catch(e => console.warn('Firebase write failed:', e));
+}
+function pushScore(mi, team, holeIdx, val) {
+  const path = team === 'a' ? `matches/${mi}/scoresA/${holeIdx}` : `matches/${mi}/scoresB/${holeIdx}`;
+  db.ref('tournament/' + path).set(val === '' ? null : Number(val)).catch(e => console.warn(e));
+}
+
+function showTab(name) {
+  ['setup','scoreboard','scoring'].forEach(t => {
+    document.getElementById('view-'+t).style.display = t===name?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+  if (name==='scoreboard') renderScoreboard();
+  if (name==='scoring')    renderScoringTab();
+}
+
+function buildSetupUI() {
+  const grid = document.getElementById('matchSetupGrid');
+  grid.innerHTML = '';
+  state.matches.forEach((m, i) => {
+    const card = document.createElement('div');
+    card.className = 'match-setup-card';
+    card.innerHTML = `
+      <div class="match-label">Match ${i+1}</div>
+      <div class="players-row">
+        <div class="team-a-block team-inputs">
+          <label>Team Finn · Pair</label>
+          <input class="player-input" placeholder="Player 1" value="${m.aPlayers[0]||''}" oninput="updatePlayer(${i},'a',0,this.value)"/>
+          <input class="player-input" placeholder="Player 2" value="${m.aPlayers[1]||''}" oninput="updatePlayer(${i},'a',1,this.value)"/>
+        </div>
+        <div class="vs-badge">vs</div>
+        <div class="team-b-block team-inputs">
+          <label>Team Goldstein · Pair</label>
+          <input class="player-input" placeholder="Player 1" value="${m.bPlayers[0]||''}" oninput="updatePlayer(${i},'b',0,this.value)"/>
+          <input class="player-input" placeholder="Player 2" value="${m.bPlayers[1]||''}" oninput="updatePlayer(${i},'b',1,this.value)"/>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function updatePlayer(mi, team, pi, val) {
+  if (team==='a') state.matches[mi].aPlayers[pi] = val;
+  else            state.matches[mi].bPlayers[pi] = val;
+}
+function saveSetup() { pushToFirebase(); showToast('Setup saved! 🥛'); renderScoreboard(); renderScoringTab(); showTab('scoreboard'); }
+function resetAll() {
+  if (!confirm('Reset ALL scores? This clears everyone\'s data immediately.')) return;
+  state.matches.forEach(m => { m.aPlayers=['','']; m.bPlayers=['','']; m.scoresA=Array(18).fill(''); m.scoresB=Array(18).fill(''); });
+  pushToFirebase(); buildSetupUI(); renderScoreboard(); renderScoringTab(); showToast('Reset complete');
+}
+
+function matchPlaySegment(scoresA, scoresB, from, to) {
+  const size = to - from;
+  let upA = 0, thru = 0;
+  for (let i = from; i < to; i++) {
+    const a = parseInt(scoresA[i]), b = parseInt(scoresB[i]);
+    if (isNaN(a) || isNaN(b)) continue;
+    thru++;
+    if (a < b) upA++; else if (b < a) upA--;
+  }
+  const done = thru === size;
+  const holesLeft = size - thru;
+  let ptsA=0, ptsB=0;
+  if (done) {
+    if (upA>0){ptsA=1;ptsB=0;} else if(upA<0){ptsA=0;ptsB=1;} else{ptsA=0.5;ptsB=0.5;}
+  }
+  let livePtsA=0, livePtsB=0;
+  if (thru===0){livePtsA=0;livePtsB=0;}
+  else if(done){livePtsA=ptsA;livePtsB=ptsB;}
+  else {
+    if(upA>holesLeft){livePtsA=1;livePtsB=0;}
+    else if(-upA>holesLeft){livePtsA=0;livePtsB=1;}
+    else if(upA>0){livePtsA=1;livePtsB=0;}
+    else if(upA<0){livePtsA=0;livePtsB=1;}
+    else{livePtsA=0.5;livePtsB=0.5;}
+  }
+  return { upA, thru, done, holesLeft, ptsA, ptsB, livePtsA, livePtsB };
+}
+
+function calcMatchPoints(m) {
+  return {
+    front:   matchPlaySegment(m.scoresA, m.scoresB, 0, 9),
+    back:    matchPlaySegment(m.scoresA, m.scoresB, 9, 18),
+    overall: matchPlaySegment(m.scoresA, m.scoresB, 0, 18)
+  };
+}
+
+function matchLeadString(m) {
+  const seg = matchPlaySegment(m.scoresA, m.scoresB, 0, 18);
+  if (seg.thru===0) return {text:'Not started',cls:'lead-pill-tie'};
+  const abs=Math.abs(seg.upA), leader=seg.upA>0?'A':seg.upA<0?'B':null;
+  if (seg.done) {
+    if (!leader) return {text:'Halved',cls:'lead-pill-tie'};
+    return {text:`${abs}UP · Final`,cls:leader==='A'?'lead-pill-a':'lead-pill-b'};
+  }
+  if (!leader) return {text:`All Square · Thru ${seg.thru}`,cls:'lead-pill-tie'};
+  if (abs===seg.holesLeft) return {text:`Dormie ${abs} (${leader})`,cls:leader==='A'?'lead-pill-a':'lead-pill-b'};
+  return {text:`${abs}UP · ${leader} · Thru ${seg.thru}`,cls:leader==='A'?'lead-pill-a':'lead-pill-b'};
+}
+
+function pairName(arr) {
+  const a=(arr[0]||'').trim(), b=(arr[1]||'').trim();
+  if(!a&&!b) return 'TBD'; if(!b) return a; if(!a) return b;
+  const last=n=>n.split(' ').pop();
+  return `${last(a)} / ${last(b)}`;
+}
+
+function renderScoreboard() {
+  let totalA=0, totalB=0;
+  document.getElementById('teamANameDisplay').textContent = state.teamAName||'Team Finn';
+  document.getElementById('teamBNameDisplay').textContent = state.teamBName||'Team Goldstein';
+  const grid = document.getElementById('matchSummaryGrid');
+  grid.innerHTML = '';
+  state.matches.forEach((m, i) => {
+    const r = calcMatchPoints(m);
+    totalA += r.front.livePtsA + r.back.livePtsA + r.overall.livePtsA;
+    totalB += r.front.livePtsB + r.back.livePtsB + r.overall.livePtsB;
+    const pA=pairName(m.aPlayers), pB=pairName(m.bPlayers);
+    let rowCls='win-tie';
+    if(r.overall.upA>0) rowCls='win-a'; else if(r.overall.upA<0) rowCls='win-b';
+    function cellHTML(seg) {
+      if(seg.thru===0) return `<span style="opacity:0.2">—</span>`;
+      const abs=Math.abs(seg.upA), leader=seg.upA>0?'A':seg.upA<0?'B':null;
+      if(seg.done){if(!leader)return`<span class="tie-val">Halved</span>`;return`<span class="${leader==='A'?'a-win-val':'b-win-val'}">${abs}UP ${leader}</span>`;}
+      if(leader==='A')return`<span class="lead-a-live">${abs}UP·A</span>`;
+      if(leader==='B')return`<span class="lead-b-live">${abs}UP·B</span>`;
+      return`<span class="as-live">AS</span>`;
+    }
+    const row = document.createElement('div');
+    row.className = `match-summary-row ${rowCls}`;
+    row.innerHTML = `
+      <div class="team-a-cell"><b>M${i+1}</b> ${pA}</div>
+      <div class="pts-cell">${cellHTML(r.front)}<span class="pts-cell-label">Front</span></div>
+      <div class="pts-cell">${cellHTML(r.back)}<span class="pts-cell-label">Back</span></div>
+      <div class="pts-cell">${cellHTML(r.overall)}<span class="pts-cell-label">Overall</span></div>
+      <div class="team-b-cell">${pB}</div>`;
+    grid.appendChild(row);
+  });
+  document.getElementById('totalPtsA').textContent = formatPts(totalA);
+  document.getElementById('totalPtsB').textContent = formatPts(totalB);
+}
+
+function formatPts(n){ return Number.isInteger(n)?n.toString():n.toFixed(1); }
+
+function renderScoringTab() {
+  const sel = document.getElementById('matchSelector');
+  sel.innerHTML = '';
+  state.matches.forEach((m, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'match-btn'+(i===activeMatchIdx?' active':'');
+    btn.textContent = `Match ${i+1}`;
+    btn.onclick = ()=>{ activeMatchIdx=i; renderScoringTab(); };
+    sel.appendChild(btn);
+  });
+  const area = document.getElementById('scoreCardArea');
+  area.innerHTML = '';
+  renderMatchCard(state.matches[activeMatchIdx], activeMatchIdx, area);
+}
+
+function renderMatchCard(m, mi, container) {
+  const card = document.createElement('div');
+  card.className = 'match-score-card';
+  const pA=(m.aPlayers||[]).filter(Boolean).join(' / ')||'Team Finn Pair';
+  const pB=(m.bPlayers||[]).filter(Boolean).join(' / ')||'Team Goldstein Pair';
+  const lead=matchLeadString(m);
+  const r=calcMatchPoints(m);
+  function segDisp(seg) {
+    if(seg.thru===0)return`<span style="opacity:0.25">–</span>`;
+    const abs=Math.abs(seg.upA),leader=seg.upA>0?'A':seg.upA<0?'B':null;
+    if(seg.done){if(!leader)return`<span class="tie-val">Halved</span>`;return leader==='A'?`<span class="a-win-val">${abs}UP</span>`:`<span class="b-win-val">${abs}UP</span>`;}
+    if(!leader)return`<span style="color:var(--muted);font-size:0.7rem">AS</span>`;
+    return leader==='A'?`<span class="a-win-val" style="font-style:italic">${abs}UP</span>`:`<span class="b-win-val" style="font-style:italic">${abs}UP</span>`;
+  }
+  card.innerHTML = `
+    <div class="match-card-header">
+      <div class="match-card-team team-a"><div>Team Finn</div><div class="player-names">${pA}</div></div>
+      <div class="match-number-badge">Match<br>${mi+1}</div>
+      <div class="match-card-team team-b"><div>Team Goldstein</div><div class="player-names">${pB}</div></div>
+    </div>
+    <div class="match-lead-bar">
+      <span class="lead-pill ${lead.cls}">${lead.text}</span>
+      <div class="lead-pts-grid">
+        <div class="lead-pt"><div class="lead-pt-label">Front</div><div class="lead-pt-val">${segDisp(r.front)}</div></div>
+        <div class="lead-pt"><div class="lead-pt-label">Back</div><div class="lead-pt-val">${segDisp(r.back)}</div></div>
+        <div class="lead-pt"><div class="lead-pt-label">Overall</div><div class="lead-pt-val">${segDisp(r.overall)}</div></div>
+      </div>
+    </div>
+    <div class="scorecard-wrap">${buildScorecardTable(m,mi)}</div>`;
+  container.appendChild(card);
+}
+
+function buildScorecardTable(m, mi) {
+  function scoreClass(score,par){if(!score||isNaN(score))return'';const d=parseInt(score)-par;if(d<=-2)return'score-eagle';if(d===-1)return'score-birdie';if(d===0)return'score-par';if(d===1)return'score-bogey';return'score-double';}
+  function holeWinner(idx){const a=parseInt(m.scoresA[idx]),b=parseInt(m.scoresB[idx]);if(isNaN(a)||isNaN(b))return'empty';if(a<b)return'a';if(b<a)return'b';return'tie';}
+  function mpStanding(from,to){let upA=0,thru=0;for(let i=from;i<to;i++){const a=parseInt(m.scoresA[i]),b=parseInt(m.scoresB[i]);if(isNaN(a)||isNaN(b))continue;thru++;if(a<b)upA++;else if(b<a)upA--;}if(thru===0)return{html:'—',col:'var(--muted)'};if(upA===0)return{html:'AS',col:'var(--muted)'};const abs=Math.abs(upA),who=upA>0?'Finn':'Gldn',col=upA>0?'var(--teal)':'var(--orange)';return{html:`${abs}UP·${who}`,col};}
+  function renderSection(holes,offset){
+    const hdr=holes.map(h=>`<th class="hole-th">${h.n}</th>`).join('');
+    const totTh=`<th class="total-th">${offset===0?'OUT':'IN'}</th>`;
+    const parRow=holes.map(h=>`<td>${h.par}</td>`).join('')+`<td class="total-col">${holes.reduce((s,h)=>s+h.par,0)}</td>`;
+    const standing=mpStanding(offset,offset+9);
+    const rowA=holes.map((h,i)=>{const idx=offset+i,val=m.scoresA[idx]??'';return`<td><input class="score-input team-a-input ${scoreClass(val,h.par)}" type="number" min="1" max="15" value="${val}" oninput="updateScore(${mi},'a',${idx},this.value)" inputmode="numeric"/></td>`;}).join('')+`<td class="total-col" rowspan="2" style="vertical-align:middle;font-size:0.7rem;font-family:'DM Mono',monospace;color:${standing.col};font-weight:700;text-align:center">${standing.html}</td>`;
+    const rowB=holes.map((h,i)=>{const idx=offset+i,val=m.scoresB[idx]??'';return`<td><input class="score-input team-b-input ${scoreClass(val,h.par)}" type="number" min="1" max="15" value="${val}" oninput="updateScore(${mi},'b',${idx},this.value)" inputmode="numeric"/></td>`;}).join('');
+    const hwRow=holes.map((h,i)=>{const w=holeWinner(offset+i);const dot=w==='empty'?'':w==='a'?`<div class="hw-dot hw-a"></div>`:w==='b'?`<div class="hw-dot hw-b"></div>`:`<div class="hw-dot hw-tie"></div>`;return`<td>${dot}</td>`;}).join('')+'<td></td>';
+    return`<tr><th></th>${hdr}${totTh}</tr><tr class="par-row"><td>PAR</td>${parRow}</tr><tr class="hw-row"><td></td>${hwRow}</tr><tr class="team-a-row"><td>Finn</td>${rowA}</tr><tr class="team-b-row"><td>Goldstein</td>${rowB}</tr>`;
+  }
+  return`<table class="scorecard-table"><thead></thead><tbody>${renderSection(HOLES.slice(0,9),0)}<tr class="section-break"><th colspan="11" style="padding:5px;font-size:0.78rem;letter-spacing:2px;">Back Nine</th></tr>${renderSection(HOLES.slice(9,18),9)}</tbody></table>`;
+}
+
+function updateScore(mi,team,holeIdx,val){
+  const parsed=val===''?'':val;
+  if(team==='a')state.matches[mi].scoresA[holeIdx]=parsed;
+  else state.matches[mi].scoresB[holeIdx]=parsed;
+  pushScore(mi,team,holeIdx,parsed);
+  scheduleRefresh(mi);
+}
+
+let refreshTimer=null;
+function scheduleRefresh(mi){
+  clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(()=>{
+    renderScoreboard();
+    if(mi===activeMatchIdx){const area=document.getElementById('scoreCardArea');area.innerHTML='';renderMatchCard(state.matches[activeMatchIdx],activeMatchIdx,area);}
+  },80);
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+buildSetupUI();
+renderScoreboard();
+renderScoringTab();
+</script>
+</body>
+</html>
